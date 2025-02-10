@@ -10,6 +10,29 @@ export function activate(context: vscode.ExtensionContext) {
 	// This line of code will only be executed once when your extension is activated
 	console.log('Congratulations, your extension "commandhelper" is now active!');
 
+	vscode.window.onDidChangeTextEditorSelection((event: vscode.TextEditorSelectionChangeEvent) => {
+		// Event kind : The change kind which has triggered this event. Can be undefined.
+		// 1: Keyboard
+		// 2: Mouse
+		// 3: Command
+		console.log(`Event kind : ${event.kind}`)
+
+		// Event selection : The new value for the text editor's selections.
+		// active : position of the cursor
+		// anchor : position at which the selection starts
+		// start : start position. It is before or equal to end.
+		// end : end position. It is after or equal to start.
+		console.log(`Event selection active (character:number, line:number): ${event.selections[0].active.character}, ${event.selections[0].active.line}`)
+		console.log(`Event selection anchor (character:number, line:number): ${event.selections[0].anchor.character}, ${event.selections[0].active.line}`)
+
+		// Event textEditor : The text editor for which the selections have changed.
+		// Affiche le texte sélectionné
+		var rangeOfSelection = new vscode.Range(event.selections[0].start, event.selections[0].end)
+		console.log(`Event textEditor : ${event.textEditor.document.getText(rangeOfSelection)}`)
+
+
+	}, null, context.subscriptions);
+
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with registerCommand
 	// The commandId parameter must match the command field in package.json
