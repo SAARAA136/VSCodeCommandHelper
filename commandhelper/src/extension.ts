@@ -55,9 +55,10 @@ export function activate(context: vscode.ExtensionContext) {
 			const jsonString = JSON.stringify(etats);
 
 			// Exécution du script Python pour la recommandation
-			const pythonProcess = spawn('python', ['src/recommendation.py', jsonString]);
+			const pythonProcess = spawn('python', ['commandhelper/src/recommendation.py', jsonString]);
 
 			pythonProcess.stdout.on('data', (data) => {
+				console.log(`Sortie Python : ${data}`);
 				vscode.window.showInformationMessage(`Commande recommandée : ${data}`);
 			});
 
@@ -89,7 +90,7 @@ export function activate(context: vscode.ExtensionContext) {
 			const jsonString = JSON.stringify(etats);
 
 			// Exécution du script Python pour la recommandation
-			const pythonProcess = spawn('python', ['src/recommendation.py', jsonString]);
+			const pythonProcess = spawn('python', ['commandhelper/src/recommendation.py', jsonString]);
 
 			pythonProcess.stdout.on('data', (data) => {
 				vscode.window.showInformationMessage(`Commande recommandée : ${data}`);
