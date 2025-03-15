@@ -43,34 +43,15 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.window.showInformationMessage('Hello World from Command Helper!');
 	});
 
-	// Événement déclenché quand l'utilisateur modifie le texte
-    // let changeListener = vscode.workspace.onDidChangeTextDocument(event => {
-    const changeListener = vscode.workspace.onDidChangeTextDocument(event => {
-        if (editor && event.document === editor.document) {
+	// Évènement qui se déclenche lorsque l'utilisateur déplace la souris ou change la sélection
+	const selectionListener = vscode.window.onDidChangeTextEditorSelection(event => {
+        if (event.textEditor === vscode.window.activeTextEditor && editor) {
+
 			const document = editor.document;
 			const text = document.getText();
 			
-			// On ajoute le nouvel état
+			// On ajoute le nouvel état texte
 			liste_etats_texte.push(text);
-			const jsonString = JSON.stringify(etats);
-
-			// Exécution du script Python pour la recommandation
-			const pythonProcess = spawn('python', ['commandhelper/src/recommendation.py', jsonString]);
-
-			pythonProcess.stdout.on('data', (data) => {
-				console.log(`Sortie Python : ${data}`);
-				vscode.window.showInformationMessage(`Commande recommandée : ${data}`);
-			});
-
-			pythonProcess.stderr.on('data', (data) => {
-				console.error(`(TypeScript) Erreur Python : ${data}`);
-			});
-        }
-    });
-
-	// Évènement qui se déclenche lorsque l'utilisateur déplace la souris ou change la sélection
-	const selectionListener = vscode.window.onDidChangeTextEditorSelection(event => {
-        if (event.textEditor === vscode.window.activeTextEditor) {
 
 			// Position actuelle du curseur
             const position = event.selections[0].active;
@@ -103,7 +84,7 @@ export function activate(context: vscode.ExtensionContext) {
         }
     });
 
-	context.subscriptions.push(disposable, changeListener, selectionListener);
+	context.subscriptions.push(disposable, selectionListener);
 }
 
 export function commentLine() {
