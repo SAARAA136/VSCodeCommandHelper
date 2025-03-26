@@ -5,30 +5,14 @@ import fs from 'fs';
 import { spawn } from 'child_process';
 import { json } from 'stream/consumers';
 
-// Représentation de la position d'un curseur sous forme de tuple (ligne, colonne)
-type Position = [number, number];
-
-// Représentation de l'état d'un curseur par sa position courante, la position du
-// début de la sélection et la position de la fin de la sélection
-type CursorState = {
-	position:Position,
-	start:Position,
-	end:Position
-};
+// Liste des états
+import { liste_etats_curseur, liste_etats_texte, recommend } from './simulation/recommendation';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
 
 	const editor = vscode.window.activeTextEditor;
-
-	// On initialise la liste des états
-	let liste_etats_texte: string[] = [];
-	let liste_etats_curseur: CursorState[] = [];
-	let etats = {
-		"etats_texte": liste_etats_texte,
-		"etats_curseur": liste_etats_curseur
-	};
 
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
@@ -68,27 +52,18 @@ export function activate(context: vscode.ExtensionContext) {
 				end: [end.line, end.character]
 			});
 
-			const jsonString = JSON.stringify(etats);
+			// On affiche ce qui est recommandé
+			let res = recommend();
 
-			// Exécution du script Python pour la recommandation
-			const pythonProcess = spawn('python', ['commandhelper/src/recommendation.py', jsonString]);
-
-			pythonProcess.stdout.on('data', (data) => {
-				vscode.window.showInformationMessage(`Commande recommandée : ${data}`);
-				console.log(`Sortie Python : ${data}`);
-			});
-
-			pythonProcess.stderr.on('data', (data) => {
-				console.error(`(TypeScript) Erreur Python : ${data}`);
-			});
+			if (res !== '') {
+				console.log("On entre dans le if");
+				vscode.window.showInformationMessage(res);
+				vscode.commands.executeCommand('vscode.diff');
+			}
         }
     });
 
 	context.subscriptions.push(disposable, selectionListener);
-}
-
-export function commentLine() {
-	vscode.commands.executeCommand('editor.action.addCommentLine');
 }
 
 // This method is called when your extension is deactivated

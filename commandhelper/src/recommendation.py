@@ -8,8 +8,8 @@ etats_texte = etats['etats_texte']
 etats_curseur = etats['etats_curseur']
 lignes = etats_texte[-1].split("\n")
 
-print(f"{etats_curseur = }")
-print(f"{etats_texte = }")
+# print(f"{etats_curseur = }")
+# print(f"{etats_texte = }")
 
 
 
