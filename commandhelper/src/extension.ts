@@ -4,9 +4,43 @@ import * as vscode from 'vscode';
 import fs from 'fs';
 import { spawn } from 'child_process';
 import { json } from 'stream/consumers';
+import { WebSocket } from 'ws';
+
+
+
+/******************************
+ * COMMUNICATION VIA WEBSOCKETS
+ ******************************/
+
+
+const PORT = 9999;
+const socket = new WebSocket(`ws://localhost:${PORT}`);
+
+socket.onopen = () => {
+    console.log('Connecté au serveur WebSocket');
+    socket.send('Hello serveur !');
+};
+
+socket.onclose = () => {
+    console.log('Connexion WebSocket fermée.');
+};
+
+socket.onerror = (error) => {
+    console.error('Erreur WebSocket:', error);
+};
+
+
+
+
+/*********************
+ * MAIN DE L'EXTENSION
+ *********************/
+
+
+
 
 // Liste des états
-import { liste_etats_curseur, liste_etats_texte, recommend } from './simulation/recommendation';
+import { liste_etats_curseur, liste_etats_texte } from './simulation/recommendation';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -38,28 +72,30 @@ export function activate(context: vscode.ExtensionContext) {
 			liste_etats_texte.push(text);
 
 			// Position actuelle du curseur
-            const position = event.selections[0].active;
+            const selections = event.selections;
 
-			// Position du début de la sélection
-			const start = event.selections[0].start;
+			if (selections.length > 1) {
+				console.log("Plusieurs sélections actives !");
+			}
 
-			// Position de la fin de la sélection
-			const end = event.selections[0].end;
-
-			liste_etats_curseur.push({
-				position: [position.line, position.character],
-				start: [start.line, start.character],
-				end: [end.line, end.character]
-			});
+			liste_etats_curseur.push(selections[0]);
 
 			// On affiche ce qui est recommandé
-			let res = recommend();
 
-			if (res !== '') {
-				console.log("On entre dans le if");
-				vscode.window.showInformationMessage(res);
-				vscode.commands.executeCommand('vscode.diff');
-			}
+			// Envoi du nouvel état au serveur
+			socket.send(JSON.stringify({
+				'texte': liste_etats_texte,
+				'curseur': liste_etats_curseur
+			}));
+
+			socket.onmessage = (event) => {
+
+				// Convertir la réponse JSON en objet
+				const response = event.data;
+				console.log(`Message du serveur: ${response}`);
+
+				// vscode.window.showInformationMessage();
+			};
         }
     });
 

@@ -1,3 +1,5 @@
+import * as vscode from 'vscode';
+
 // Représentation de la position d'un curseur sous forme de tuple (ligne, colonne)
 export type Position = [number, number];
 
@@ -11,15 +13,5 @@ export type CursorState = {
 
 // Listes représentant les états
 export let liste_etats_texte: string[] = [];
-export let liste_etats_curseur: CursorState[] = [];
-
-export function recommend() : string {
-
-    console.log(liste_etats_texte);
-
-    if (liste_etats_texte[liste_etats_texte.length-1].includes("bonjour")) {
-        return "BONJOUR";
-    }
-
-    return '';
-}
+// export let liste_etats_curseur: CursorState[] = [];
+export let liste_etats_curseur: vscode.Selection[] = [];
