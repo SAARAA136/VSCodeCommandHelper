@@ -13,6 +13,7 @@ import { WebSocket } from 'ws';
  ******************************/
 
 
+
 const PORT = 9999;
 const socket = new WebSocket(`ws://localhost:${PORT}`);
 
@@ -31,11 +32,9 @@ socket.onerror = (error) => {
 
 
 
-
 /*********************
  * MAIN DE L'EXTENSION
  *********************/
-
 
 
 

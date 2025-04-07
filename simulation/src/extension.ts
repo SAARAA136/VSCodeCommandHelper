@@ -53,22 +53,22 @@ export function activate(context: vscode.ExtensionContext) {
 
         // L'extension envoie une requête pour la simulation avec la liste des
         // états
-        ws.on('message', (message) => {
+        ws.on('message', async (message) => {
             try {
 
                 // Convertir le message en objet JSON
                 const data = JSON.parse(message.toString());
 
                 // Calcul des recommendations par simulation
-                // const recommendations = simulate(data.texte, data.curseur, textEditor);
-                if (data.texte.length > 0) {
-                    ecrire_texte(data.texte[data.texte.length-1], textEditor);
-                }
-
-                // if (recommendations !== '') {
-                //     // Envoi du résultat
-                //     ws.send(recommendations);
+                const recommendations = await simulate(data.texte, data.curseur, textEditor);
+                // if (data.texte.length > 0) {
+                //     ecrire_texte(data.texte[data.texte.length-1], textEditor);
                 // }
+
+                if (recommendations !== '') {
+                    // Envoi du résultat
+                    ws.send(recommendations);
+                }
 
             } catch (error) {
                 ws.send(JSON.stringify({ erreur: 'Format JSON invalide' }));
@@ -91,32 +91,26 @@ export function activate(context: vscode.ExtensionContext) {
 
 
 
-function simulate(liste_etats_texte: string[], liste_etats_curseur: vscode.Selection[], textEditor: vscode.TextEditor | undefined) : string {
+async function simulate(liste_etats_texte: string[], liste_etats_curseur: vscode.Selection[], textEditor: vscode.TextEditor | undefined) : Promise<string> {
 
 
     /*______________________________________________________________________________________________*/
 
 
-    const allCommands = async function listAllCommands() {
-        return await vscode.commands.getCommands(true); // `true` inclut les commandes cachées
-    }();
+    const allCommands = await vscode.commands.getCommands(true); // `true` inclut les commandes cachées
     
-    console.log("Liste des commandes :\n", allCommands);
+    // console.log("Liste des commandes :\n", allCommands);
     
-    // Écriture de la liste de toutes les commandes disponibles
-    fs.writeFile("listeCommandes.txt", '', (err: any) => {
-        if (err) {
-            console.error("Erreur d'écriture :", err);
-            return;
-        }
-        console.log("Fichier pour la liste des commandes créé !");
-    });
+    // // Écriture de la liste de toutes les commandes disponibles
+    // fs.writeFile("listeCommandes.txt", '', (err: any) => {
+    //     if (err) {
+    //         console.error("Erreur d'écriture :", err);
+    //         return;
+    //     }
+    //     console.log("Fichier pour la liste des commandes créé !");
+    // });
     
-    for (let command in allCommands) {
-        fs.appendFile("listeCommandes.txt", command+'\n', (err: any) => {
-            if (err) { throw err; }
-        });
-    }
+    // fs.writeFileSync("listeCommandes.txt", allCommands.join('\n'), 'utf8');
 
 
     /*______________________________________________________________________________________________*/
@@ -133,7 +127,8 @@ function simulate(liste_etats_texte: string[], liste_etats_curseur: vscode.Selec
         'undo',
         'redo',
         'editor.action.addSelectionToNextFindMatch',
-        'editor.action.deleteLines'
+        'editor.action.deleteLines',
+        'editor.action.goToDeclaration'
     ];
 
     let recommendations: string = "";
@@ -152,14 +147,13 @@ function simulate(liste_etats_texte: string[], liste_etats_curseur: vscode.Selec
         const last_texte = liste_etats_texte[nb_etats-1];
         const last_cursor = liste_etats_curseur[nb_etats-1];
 
+        // console.log('Last Cursor:', afficheCursor(last_cursor));
+
         // Parcours de tous les états du premier jusqu'à l'antépénultième
         for (let i=0; i<nb_etats-2; i++) {
 
             const current_texte = liste_etats_texte[i];
             const current_cursor = liste_etats_curseur[i];
-
-            console.log("\n\nCurrent Texte :");
-            console.log(current_texte);
 
             // Copie de l'état courant dans la fenêtre de simulation
             if (textEditor) {
@@ -173,39 +167,30 @@ function simulate(liste_etats_texte: string[], liste_etats_curseur: vscode.Selec
                         textEditor.document.positionAt(textEditor.document.getText().length) // Fin du fichier
                     );
                 
-                    textEditor.edit(editBuilder => {
+                    await textEditor.edit(editBuilder => {
                         editBuilder.replace(fullRange, current_texte);
                     });
 
                     // On place le curseur
-                    // const currentPositionAnchor = new vscode.Position(current_cursor.anchor.line, current_cursor.anchor.character);
-                    // const currentPositionActive = new vscode.Position(current_cursor.active.line, current_cursor.active.character);
-                    // textEditor.selection = new vscode.Selection(currentPositionAnchor, currentPositionActive);
+                    const currentPositionAnchor = new vscode.Position(current_cursor.anchor.line, current_cursor.anchor.character);
+                    const currentPositionActive = new vscode.Position(current_cursor.active.line, current_cursor.active.character);
+                    textEditor.selection = new vscode.Selection(currentPositionAnchor, currentPositionActive);
 
                     // Exécution de la commande
-                    // vscode.commands.executeCommand(command);
+                    await vscode.commands.executeCommand(command);
 
                     // Récupération de l'état obtenu
                     const new_texte = textEditor.document.getText();
                     const new_cursor = textEditor.selection;
 
-                    // console.log("\n\nNew Cursor :");
-                    // console.log(new_cursor);
-                    // console.log("\n\nCurrent Cursor :");
-                    // console.log(current_cursor);
-
-                    console.log("\n\nNew Texte :");
-                    console.log(new_texte);
-                    console.log("\n\nLast Texte :");
-                    console.log(last_texte);
-
-                    // C'est le même état, on peut recommander la commande
-                    // TODO : pour l'instant on ne compare que le texte
-                    if (new_texte === last_texte) {
-                        recommendations += command + '\n';
+                    // On regarde s'il y a eu un changement à l'issue de l'exécution
+                    // de la commande
+                    if (new_texte !== current_texte || compareCursorState(new_cursor, current_cursor) === false) {
+                        // C'est le même état, on peut recommander la commande
+                        if (new_texte === last_texte && compareCursorState(new_cursor, last_cursor)) {
+                            recommendations += command + '\n';
+                        }
                     }
-
-                    break;
                 }
             }
         }
@@ -228,6 +213,35 @@ function ecrire_texte(texte: string, textEditor: vscode.TextEditor | undefined) 
             editBuilder.replace(fullRange, texte);
         });
     }
+}
+
+/**
+ * Permet de comparer deux états de curseur.
+ * @param state1 Le premier état à comparer.
+ * @param state2 Le deuxième état à comparer.
+ * @returns true si ce sont les même états et false sinon.
+ */
+function compareCursorState(state1: vscode.Selection, state2: vscode.Selection): boolean {
+
+    // console.log("______________________________");
+    // console.log('state1: ', afficheCursor(state1));
+    // console.log('state2: ', afficheCursor(state2));
+
+    if (state1.start.line !== state2.start.line || state1.start.character !== state2.start.character) {
+        return false;
+    }
+
+    if (state1.end.line !== state2.end.line || state1.end.character !== state2.end.character) {
+        return false;
+    }
+
+    // console.log("$Les deux états sont les même.");
+
+    return true;
+}
+
+function afficheCursor(cursor: vscode.Selection) {
+    return `start (${cursor.start.line}, ${cursor.start.character}) - end (${cursor.end.line}, ${cursor.end.character})`;
 }
 
 
