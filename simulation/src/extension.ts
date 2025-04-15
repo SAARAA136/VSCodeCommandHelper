@@ -80,7 +80,8 @@ export function activate(context: vscode.ExtensionContext) {
         });
     });
 
-    console.log(`Serveur WebSocket démarré sur ws://localhost:${PORT}`); 
+    console.log(`Serveur WebSocket démarré sur ws://localhost:${PORT}`);
+
 }
 
 
@@ -93,29 +94,6 @@ export function activate(context: vscode.ExtensionContext) {
 
 async function simulate(liste_etats_texte: string[], liste_etats_curseur: vscode.Selection[], textEditor: vscode.TextEditor | undefined) : Promise<string> {
 
-
-    /*______________________________________________________________________________________________*/
-
-
-    const allCommands = await vscode.commands.getCommands(true); // `true` inclut les commandes cachées
-    
-    // console.log("Liste des commandes :\n", allCommands);
-    
-    // // Écriture de la liste de toutes les commandes disponibles
-    // fs.writeFile("listeCommandes.txt", '', (err: any) => {
-    //     if (err) {
-    //         console.error("Erreur d'écriture :", err);
-    //         return;
-    //     }
-    //     console.log("Fichier pour la liste des commandes créé !");
-    // });
-    
-    // fs.writeFileSync("listeCommandes.txt", allCommands.join('\n'), 'utf8');
-
-
-    /*______________________________________________________________________________________________*/
-
-        
     // Test seulement sur certaines commandes
     const commands = [
         'tab',
@@ -127,8 +105,7 @@ async function simulate(liste_etats_texte: string[], liste_etats_curseur: vscode
         'undo',
         'redo',
         'editor.action.addSelectionToNextFindMatch',
-        'editor.action.deleteLines',
-        'editor.action.goToDeclaration'
+        'editor.action.deleteLines'
     ];
 
     let recommendations: string = "";
@@ -223,7 +200,7 @@ function ecrire_texte(texte: string, textEditor: vscode.TextEditor | undefined) 
  */
 function compareCursorState(state1: vscode.Selection, state2: vscode.Selection): boolean {
 
-    // console.log("______________________________");
+    // console.log("_______________________________");
     // console.log('state1: ', afficheCursor(state1));
     // console.log('state2: ', afficheCursor(state2));
 
@@ -242,6 +219,23 @@ function compareCursorState(state1: vscode.Selection, state2: vscode.Selection):
 
 function afficheCursor(cursor: vscode.Selection) {
     return `start (${cursor.start.line}, ${cursor.start.character}) - end (${cursor.end.line}, ${cursor.end.character})`;
+}
+
+async function writeAllCommands(nomFichier: string) {
+
+    const allCommands = await vscode.commands.getCommands(true); // `true` retire les commandes systèmes
+    console.log("Liste des commandes :\n", allCommands);
+    
+    // Écriture de la liste de toutes les commandes disponibles
+    fs.writeFile(nomFichier, '', (err: any) => {
+        if (err) {
+            console.error("Erreur d'écriture :", err);
+            return;
+        }
+        console.log("Fichier pour la liste des commandes créé !");
+    });
+    
+    fs.writeFileSync(nomFichier, allCommands.join('\n'), 'utf8');
 }
 
 
