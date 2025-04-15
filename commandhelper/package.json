@@ -12,6 +12,24 @@
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "recommendations-sidebar",
+          "title": "Commandes",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "recommendations-sidebar": [
+        {
+          "id": "recommendedCommands",
+          "name": "Commandes recommandées",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "command-helper.helloWorld",
