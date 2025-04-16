@@ -1,22 +1,53 @@
-// Import des modules nécessaires
 import * as vscode from 'vscode';
-import { getRecommendations } from './data'; // Fonction fictive qui retourne les commandes recommandées
 
 /**
  * Classe responsable de gérer le panneau latéral (Webview View)
  * Elle doit implémenter l'interface WebviewViewProvider
  */
 export class RecommendationsSidebarProvider implements vscode.WebviewViewProvider {
-  constructor(private readonly _extensionUri: vscode.Uri) {}
+  private recommandations: string[];
+  private _webviewView: any;
+
+  constructor(private readonly _extensionUri: vscode.Uri) {
+    this.recommandations = [];
+    this._webviewView;
+  }
+
+  // Méthode pour ajouter un élément à l'array et mettre à jour la Webview
+  addRecommandation(recommandation: string): void {
+    if (!this.recommandations.includes(recommandation)) {
+      this.recommandations.push(recommandation);
+      this.updateCommandList(); // Appel pour mettre à jour la liste des commandes dans la Webview
+    }
+  }
+
+  // Méthode pour obtenir la liste des recommandations
+  getRecommendations(): string[] {
+    return this.recommandations;
+  }
+
+  // Méthode pour envoyer les données à la Webview pour mise à jour
+  private updateCommandList(): void {
+    // Assurez-vous que nous avons une Webview avant d'envoyer des messages
+    if (this._webviewView) {
+      this._webviewView.webview.postMessage({
+        type: 'updateCommands',
+        data: this.getRecommendations()
+      });
+    }
+  }
 
   /**
    * Méthode appelée automatiquement par VSCode lorsqu'il faut afficher la Webview View
    */
   resolveWebviewView(
-    webviewView: vscode.WebviewView,                 // L'objet qui représente la Webview dans l'UI
-    _context: vscode.WebviewViewResolveContext,      // Contexte de résolution (peu utilisé ici)
-    _token: vscode.CancellationToken                 // Permet d'annuler si nécessaire
+    webviewView: vscode.WebviewView,
+    _context: vscode.WebviewViewResolveContext,
+    _token: vscode.CancellationToken
   ) {
+    // Sauvegarder la référence de la Webview pour la mise à jour
+    this._webviewView = webviewView;
+
     // Configuration de la Webview : autorisation du JavaScript et accès aux ressources locales
     webviewView.webview.options = {
       enableScripts: true, // Permet l'exécution de scripts JS dans la Webview
@@ -35,22 +66,18 @@ export class RecommendationsSidebarProvider implements vscode.WebviewViewProvide
     // On injecte le contenu HTML dans la Webview
     webviewView.webview.html = this._getHtmlForWebview(scriptUri, styleUri);
 
-    /**
-     * Gestion de la réception de messages depuis le JavaScript de la Webview
-     * Par exemple : quand l'utilisateur coche ou décoche une commande
-     */
+    // Gestion de la réception de messages depuis le JavaScript de la Webview
     webviewView.webview.onDidReceiveMessage(message => {
       if (message.type === 'toggleCommand') {
         const { command, enabled } = message;
 
         // Traitement du changement d'état d'une commande
-        // (ici, simple affichage dans la console ; à remplacer par une logique de persistance)
         console.log(`Commande ${command} => ${enabled}`);
       }
     });
 
     // Envoi initial des données vers la Webview (la liste des commandes recommandées)
-    webviewView.webview.postMessage({ type: 'init', data: getRecommendations() });
+    webviewView.webview.postMessage({ type: 'updateCommands', data: this.getRecommendations() });
   }
 
   /**

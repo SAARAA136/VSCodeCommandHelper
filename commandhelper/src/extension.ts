@@ -2,6 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import fs from 'fs';
+import * as path from 'path';
 import { spawn } from 'child_process';
 import { json } from 'stream/consumers';
 import { WebSocket } from 'ws';
@@ -86,10 +87,11 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Enregistrement de la commande "Afficher les recommandations"
 	context.subscriptions.push(
-		vscode.commands.registerCommand('extension.showRecommendationsPopup', () => {
+		vscode.commands.registerCommand('extension.showRecommendationsPopup', (commande: string) => {
+			sidebarProvider.addRecommandation(commande);
 			// Affiche une boîte de message avec un bouton "Voir"
 			vscode.window.showInformationMessage(
-				'Des commandes vous sont recommandées',
+				`Des commandes vous sont recommandées : ${commande}`,
 				'Voir'
 			).then(selection => {
 				if (selection === 'Voir') {
@@ -99,8 +101,6 @@ export function activate(context: vscode.ExtensionContext) {
 			});
 		})
 	);
-
-
 
 	/**********************
 	* MISE À JOUR DES ÉTATS
@@ -135,13 +135,15 @@ export function activate(context: vscode.ExtensionContext) {
 				'curseur': liste_etats_curseur
 			}));
 
+			// On reçoit une recommendation
 			socket.onmessage = (event) => {
-
 				// Convertir la réponse JSON en objet
 				const response = event.data;
-				console.log(`Message du serveur: ${response}`);
 
-				// vscode.window.showInformationMessage();
+				vscode.commands.executeCommand('extension.showRecommendationsPopup', `${response}`);
+
+				const filePath = path.join(__dirname, 'log');
+				const line = `${response}`;
 			};
 		}
 	});
