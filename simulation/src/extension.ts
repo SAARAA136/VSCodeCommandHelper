@@ -60,10 +60,18 @@ export function activate(context: vscode.ExtensionContext) {
                 const data = JSON.parse(message.toString());
 
                 // Calcul des recommendations par simulation
-                const recommendations = await simulate(data.texte, data.curseur, textEditor);
-                // if (data.texte.length > 0) {
-                //     ecrire_texte(data.texte[data.texte.length-1], textEditor);
-                // }
+                const t0 = performance.now();
+                const recommendations = await simulate(data.texte, data.curseur, textEditor, false);
+                const t1 = performance.now();
+
+                // Écriture du temps de simulation
+                fs.appendFile('performances2.txt', `${t1 - t0}\n`, (err: any) => {
+                    if (err) {
+                        console.error("Erreur d'écriture :", err);
+                        return;
+                    }
+                    console.log("Fichier pour la liste des commandes créé !");
+                });
 
                 if (recommendations !== '') {
                     // Envoi du résultat
@@ -86,27 +94,41 @@ export function activate(context: vscode.ExtensionContext) {
 
 
 
- /**************************
- * SIMULATION DES COMMANDES
- **************************/
+/**************************
+* SIMULATION DES COMMANDES
+**************************/
 
 
 
-async function simulate(liste_etats_texte: string[], liste_etats_curseur: vscode.Selection[], textEditor: vscode.TextEditor | undefined) : Promise<string> {
+async function simulate(liste_etats_texte: string[],
+    liste_etats_curseur: vscode.Selection[],
+    textEditor: vscode.TextEditor | undefined,
+    allCommands: boolean): Promise<string> {
 
+    let commands: string[] = [];
+
+    // Test sur toutes les commandes
+    if (allCommands) {
+        // Lecture du fichier contenant les commandes
+        commands = await readAllCommands('./editorCommands.txt');
+    }
     // Test seulement sur certaines commandes
-    const commands = [
-        'tab',
-        'editor.action.selectAll',
-        'editor.action.commentLine',
-        'editor.action.moveLinesUpAction',
-        'editor.action.moveLinesDownAction',
-        'editor.action.selectHighlights',
-        'undo',
-        'redo',
-        'editor.action.addSelectionToNextFindMatch',
-        'editor.action.deleteLines'
-    ];
+    else {
+        commands = [
+            'tab',
+            'editor.action.selectAll',
+            'editor.action.commentLine',
+            'editor.action.moveLinesUpAction',
+            'editor.action.moveLinesDownAction',
+            'editor.action.selectHighlights',
+            'undo',
+            'redo',
+            'editor.action.addSelectionToNextFindMatch',
+            'editor.action.deleteLines'
+        ];
+    }
+
+    commands = ['editor.action.commentLine'];
 
     let recommendations: string = "";
     const nb_etats = liste_etats_curseur.length;
@@ -117,17 +139,15 @@ async function simulate(liste_etats_texte: string[], liste_etats_curseur: vscode
         if (nb_etats !== liste_etats_texte.length) {
             throw new Error(`La liste des états du curseur (${nb_etats})\
                 et la liste des états du texte (${liste_etats_texte.length}) ne sont pas de\
-                 la même longueur`); 
+                 la même longueur`);
         }
 
         // On récupère le dernier état avec lequel on va faire la comparaison
-        const last_texte = liste_etats_texte[nb_etats-1];
-        const last_cursor = liste_etats_curseur[nb_etats-1];
-
-        // console.log('Last Cursor:', afficheCursor(last_cursor));
+        const last_texte = liste_etats_texte[nb_etats - 1];
+        const last_cursor = liste_etats_curseur[nb_etats - 1];
 
         // Parcours de tous les états du premier jusqu'à l'antépénultième
-        for (let i=0; i<nb_etats-2; i++) {
+        for (let i = 0; i < nb_etats - 2; i++) {
 
             const current_texte = liste_etats_texte[i];
             const current_cursor = liste_etats_curseur[i];
@@ -143,7 +163,7 @@ async function simulate(liste_etats_texte: string[], liste_etats_curseur: vscode
                         textEditor.document.positionAt(0), // Début du fichier
                         textEditor.document.positionAt(textEditor.document.getText().length) // Fin du fichier
                     );
-                
+
                     await textEditor.edit(editBuilder => {
                         editBuilder.replace(fullRange, current_texte);
                     });
@@ -225,7 +245,7 @@ async function writeAllCommands(nomFichier: string) {
 
     const allCommands = await vscode.commands.getCommands(true); // `true` retire les commandes systèmes
     console.log("Liste des commandes :\n", allCommands);
-    
+
     // Écriture de la liste de toutes les commandes disponibles
     fs.writeFile(nomFichier, '', (err: any) => {
         if (err) {
@@ -234,8 +254,21 @@ async function writeAllCommands(nomFichier: string) {
         }
         console.log("Fichier pour la liste des commandes créé !");
     });
-    
+
     fs.writeFileSync(nomFichier, allCommands.join('\n'), 'utf8');
+}
+
+async function readAllCommands(nomFichier: string): Promise<string[]> {
+
+    let data: string = "";
+
+    try {
+        data = fs.readFileSync(nomFichier, 'utf8');
+    } catch (err) {
+        console.error(err);
+    }
+
+    return data.split('\n');
 }
 
 

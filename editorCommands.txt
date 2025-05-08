@@ -35,13 +35,11 @@ editor.action.previewDeclaration
 editor.action.peekDefinition
 editor.action.revealDeclaration
 editor.action.peekDeclaration
-editor.action.goToTypeDefinition
 editor.action.peekTypeDefinition
 editor.action.goToImplementation
 editor.action.peekImplementation
 editor.action.goToReferences
 editor.action.referenceSearch.trigger
-editor.action.goToLocations
 editor.action.peekLocations
 editor.action.findReferences
 editor.action.showReferences
