@@ -22,7 +22,7 @@ Le projet se compose de trois extensions :
 
 3. Une extension dédiée à la **simulation** des commandes, nécessaire au fonctionnement de l’extension générique.
 
-### Installation
+## Installation (IMPORTANT)
 
 Depuis le répertoire racine `VSCodeCommandHelper`, exécutez la commande suivante :
 
@@ -36,7 +36,7 @@ Depuis le dossier `VSCodeCommandHelper`, lancez :
 
     code commandhelper-rules
 
-Une fenêtre VS Code s’ouvre. Ouvrez ensuite le fichier `extension.ts`, puis appuyez sur **F5** pour activer l’extension. Une nouvelle fenêtre s’ouvre, dans laquelle l’utilisateur peut écrire du texte ou du code : le système proposera alors certaines commandes potentiellement utiles.
+Une fenêtre VS Code s’ouvre. Ouvrez ensuite le fichier `extension.ts` dans le dossier `src`, puis appuyez sur **F5** pour activer l’extension. Si une sélection vous est proposée, choisissez "VS Code Extension Development". Une nouvelle fenêtre s’ouvre, dans laquelle l’utilisateur peut écrire du texte ou du code : le système proposera alors certaines commandes potentiellement utiles.
 
 > Pour redémarrer une simulation, relancez **F5** depuis le fichier extension.ts.
 
@@ -60,17 +60,17 @@ Depuis le dossier `VSCodeCommandHelper`, exécutez :
     
 Cela ouvre deux fenêtres :
 
-- Une fenêtre simulation pour rejouer les commandes à tester,
+- Une fenêtre simulation pour rejouer les commandes à tester.
 
 - Une fenêtre commandhelper dans laquelle l’utilisateur travaille.
 
 **Étapes :**
 
-1. Dans la fenêtre simulation, ouvrez le fichier extension.ts et appuyez sur F5 pour lancer la fenêtre de débogage.
+1. Dans la fenêtre simulation, ouvrez le fichier `extension.ts`dans le dossier `src` et appuyez sur F5 pour lancer la fenêtre de débogage.
 
 - Si une sélection vous est proposée, choisissez "VS Code Extension Development".
 
-2. Dans la fenêtre commandhelper, ouvrez également extension.ts, puis appuyez sur F5.
+2. Dans la fenêtre commandhelper, ouvrez également `extension.ts` dans le dossier `src`, puis appuyez sur F5. Lorsque la fenêtre s'ouvre, faites `Ctrl+shit+P` qui ouvrira le panel de commande et tapez `Command Helper, puis entrer.
 
 - La nouvelle fenêtre qui s’ouvre sera l’environnement de travail de l’utilisateur, dans lequel il pourra écrire librement.
 
