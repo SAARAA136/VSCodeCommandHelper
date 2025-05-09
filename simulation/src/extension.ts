@@ -60,18 +60,7 @@ export function activate(context: vscode.ExtensionContext) {
                 const data = JSON.parse(message.toString());
 
                 // Calcul des recommendations par simulation
-                const t0 = performance.now();
                 const recommendations = await simulate(data.texte, data.curseur, textEditor, false);
-                const t1 = performance.now();
-
-                // Écriture du temps de simulation
-                fs.appendFile('performances2.txt', `${t1 - t0}\n`, (err: any) => {
-                    if (err) {
-                        console.error("Erreur d'écriture :", err);
-                        return;
-                    }
-                    console.log("Fichier pour la liste des commandes créé !");
-                });
 
                 if (recommendations !== '') {
                     // Envoi du résultat
@@ -127,8 +116,6 @@ async function simulate(liste_etats_texte: string[],
             'editor.action.deleteLines'
         ];
     }
-
-    commands = ['editor.action.commentLine'];
 
     let recommendations: string = "";
     const nb_etats = liste_etats_curseur.length;
@@ -220,9 +207,6 @@ function ecrire_texte(texte: string, textEditor: vscode.TextEditor | undefined) 
  */
 function compareCursorState(state1: vscode.Selection, state2: vscode.Selection): boolean {
 
-    // console.log("_______________________________");
-    // console.log('state1: ', afficheCursor(state1));
-    // console.log('state2: ', afficheCursor(state2));
 
     if (state1.start.line !== state2.start.line || state1.start.character !== state2.start.character) {
         return false;
@@ -231,8 +215,6 @@ function compareCursorState(state1: vscode.Selection, state2: vscode.Selection):
     if (state1.end.line !== state2.end.line || state1.end.character !== state2.end.character) {
         return false;
     }
-
-    // console.log("$Les deux états sont les même.");
 
     return true;
 }
