@@ -89,9 +89,7 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.commands.registerCommand('extension.showRecommendationsPopup', (commande: string) => {
 			const recommandations = commande.split("\n");
-			console.log('nouvelle recommandation');
 
-			console.log(recommandations);
 			sidebarProvider.addRecommandation(recommandations);
 			// Affiche une boîte de message avec un bouton "Voir"
 			vscode.window.showInformationMessage(
@@ -131,12 +129,17 @@ export function activate(context: vscode.ExtensionContext) {
 
 			liste_etats_curseur.push(selections[0]);
 
-			// On affiche ce qui est recommandé
+			const banned_commands = sidebarProvider.getBannedList();
+			const recommended = sidebarProvider.getRecommendations();
+			console.log("etat :");
+			console.log(recommended);
+			console.log(banned_commands);
 
 			// Envoi du nouvel état au serveur
 			socket.send(JSON.stringify({
 				'texte': liste_etats_texte,
-				'curseur': liste_etats_curseur
+				'curseur': liste_etats_curseur,
+				'banned_commands': banned_commands
 			}));
 
 			// On reçoit une recommendation

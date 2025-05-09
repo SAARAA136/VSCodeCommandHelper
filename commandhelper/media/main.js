@@ -16,38 +16,56 @@ window.addEventListener('message', event => {
 // Fonction de mise à jour de la liste des commandes
 function updateCommandList(commands) {
     const commandListContainer = document.getElementById('command-list');
-    commandListContainer.innerHTML = ''; // Vider le contenu existant
+    const vscode = acquireVsCodeApi();
 
-    // Ajouter chaque commande à la liste
-    commands.forEach(command => {
-        // Créé un nouveau div qui contient une checkbox et son label
-        const commandElement = document.createElement('div');
-        commandElement.classList.add('command-item');
+    // Keep track of the current checkboxes
+    const checkboxes = Array.from(commandListContainer.getElementsByClassName('command-item'));
 
-        // Créé la checkbox pour chaque commande
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.checked = command.enabled;
+    commands.forEach((command, index) => {
+        // If the checkbox already exists, update its state
+        const existingElement = checkboxes[index];
 
-        // Ensure the checkbox reflects the change
-        checkbox.addEventListener('change', () => {
-            const enabled = checkbox.checked;
-            vscode.postMessage({
-                type: 'toggleCommand',
-                command: command,
-                enabled: enabled
+        if (existingElement) {
+            const checkbox = existingElement.querySelector('input[type="checkbox"]');
+            if (checkbox) {
+                checkbox.checked = command.enabled;
+            }
+        } else {
+            // Otherwise, create a new checkbox if it doesn't exist
+            const commandElement = document.createElement('div');
+            commandElement.classList.add('command-item');
+
+            // Create the checkbox
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = command.enabled;
+
+            checkbox.addEventListener('change', (event) => {
+                const enabled = event.target.checked;
+                vscode.postMessage({
+                    type: 'toggleCommand',
+                    commandName: command.name,
+                    enabled: enabled
+                });
             });
-        });
 
-        // Créé l'élément span qui contient le nom de la commande
-        const commandText = document.createElement('span');
-        commandText.textContent = command.name || 'Unnamed Command';
+            // Create the command name text
+            const commandText = document.createElement('span');
+            commandText.textContent = command.name || 'Unnamed Command';
 
-        // Ajoute une checkbox et du texte à commandElement div
-        commandElement.appendChild(checkbox);
-        commandElement.appendChild(commandText);
+            // Append checkbox and text to the commandElement
+            commandElement.appendChild(checkbox);
+            commandElement.appendChild(commandText);
 
-        // Ajoute le commandElement au container
-        commandListContainer.appendChild(commandElement);
+            // Append the new command to the container
+            commandListContainer.appendChild(commandElement);
+        }
     });
+
+    // Remove any extra elements that no longer exist in the updated list
+    if (checkboxes.length > commands.length) {
+        for (let i = commands.length; i < checkboxes.length; i++) {
+            commandListContainer.removeChild(checkboxes[i]);
+        }
+    }
 }

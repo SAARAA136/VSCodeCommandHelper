@@ -31,16 +31,22 @@ export class RecommendationsSidebarProvider implements vscode.WebviewViewProvide
     return this.recommandations;
   }
 
-  // Méthode pour envoyer les données à la Webview pour mise à jour
+  getBannedList(): string[] {
+    const banned_commands = this.recommandations
+      .filter(item => !item.enabled)
+      .map(item => item.name);
+    return banned_commands;
+  }
+
   private updateCommandList(): void {
-    // Assurez-vous que nous avons une Webview avant d'envoyer des messages
     if (this._webviewView) {
       this._webviewView.webview.postMessage({
         type: 'updateCommands',
-        data: this.getRecommendations()
+        data: this.getRecommendations() // Ensure you're sending the full updated list
       });
     }
   }
+
 
   /**
    * Méthode appelée automatiquement par VSCode lorsqu'il faut afficher la Webview View
@@ -73,14 +79,14 @@ export class RecommendationsSidebarProvider implements vscode.WebviewViewProvide
 
     // Gestion de la réception de messages depuis le JavaScript de la Webview
     webviewView.webview.onDidReceiveMessage(message => {
-      if (message.type === 'toggleCommand') {
-        const { commandName, status } = message;
-        // Traitement du changement d'état d'une commande
-        console.log(`Commande ${commandName} => ${status}`);
-        const command = this.recommandations.find(command => command.name === commandName);
-        if (command) {
-          command.enabled = status;
-        }
+      switch (message.type) {
+        case 'toggleCommand':
+          const command = this.recommandations.find(command => command.name === message.commandName);
+          if (command) {
+            command.enabled = message.enabled; // Update the enabled status of the found command
+            this.updateCommandList(); // Make sure to update the Webview with the new state
+          }
+          return;
       }
     });
 
@@ -106,7 +112,8 @@ export class RecommendationsSidebarProvider implements vscode.WebviewViewProvide
       <body>
         <h2>Commandes recommandées</h2>
         <div id="command-list"></div> <!-- Conteneur dynamique -->
-        <script src="${scriptUri}"></script> <!-- Script qui gère l'affichage et l'interaction -->
+        <script src="${scriptUri}">
+        </script> <!-- Script qui gère l'affichage et l'interaction -->
       </body>
       </html>
     `;

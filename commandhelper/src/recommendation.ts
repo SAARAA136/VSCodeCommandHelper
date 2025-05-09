@@ -6,9 +6,9 @@ export type Position = [number, number];
 // Représentation de l'état d'un curseur par sa position courante, la position du
 // début de la sélection et la position de la fin de la sélection
 export type CursorState = {
-	position:Position,
-	start:Position,
-	end:Position
+	position: Position,
+	start: Position,
+	end: Position
 };
 
 // Listes représentant les états
