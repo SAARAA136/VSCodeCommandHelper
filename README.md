@@ -70,7 +70,7 @@ Cela ouvre deux fenêtres :
 
 - Si une sélection vous est proposée, choisissez "VS Code Extension Development".
 
-2. Dans la fenêtre commandhelper, ouvrez également `extension.ts` dans le dossier `src`, puis appuyez sur F5. Lorsque la fenêtre s'ouvre, faites `Ctrl+shit+P` qui ouvrira le panel de commande et tapez `Command Helper, puis entrer.
+2. Dans la fenêtre commandhelper, ouvrez également `extension.ts` dans le dossier `src`, puis appuyez sur F5. Lorsque la fenêtre s'ouvre, faites `Ctrl+shit+P` qui ouvrira le panel de commande et tapez `Command Helper`, puis entrer.
 
 - La nouvelle fenêtre qui s’ouvre sera l’environnement de travail de l’utilisateur, dans lequel il pourra écrire librement.
 
