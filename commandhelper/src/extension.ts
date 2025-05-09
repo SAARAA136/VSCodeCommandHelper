@@ -131,8 +131,6 @@ export function activate(context: vscode.ExtensionContext) {
 
 			const banned_commands = sidebarProvider.getBannedList();
 			const recommended = sidebarProvider.getRecommendations();
-			console.log("banned :");
-			console.log(banned_commands);
 
 			// Envoi du nouvel état au serveur
 			socket.send(JSON.stringify({

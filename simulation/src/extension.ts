@@ -165,7 +165,6 @@ async function simulate(liste_etats_texte: string[],
                     if (isInList !== true) {
                         // Exécution de la commande
                         await vscode.commands.executeCommand(command);
-                        console.log(command);
                     }
 
                     // Récupération de l'état obtenu
