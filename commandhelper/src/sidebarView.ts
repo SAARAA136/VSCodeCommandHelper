@@ -5,12 +5,14 @@ import * as vscode from 'vscode';
  * Elle doit implémenter l'interface WebviewViewProvider
  */
 export class RecommendationsSidebarProvider implements vscode.WebviewViewProvider {
-  private recommandations: Array<{ enabled: boolean, name: string }>;
+  private recommandations: Array<{ enabled: boolean, name: string, keybinding?: string }>;
   private _webviewView: any;
+  private keybindingsMap: Map<string, string>;
 
-  constructor(private readonly _extensionUri: vscode.Uri) {
+  constructor(private readonly _extensionUri: vscode.Uri, keybindingsMap: Map<string, string>) {
     this.recommandations = [];
     this._webviewView;
+    this.keybindingsMap = keybindingsMap;
   }
 
   // Méthode pour ajouter un élément à l'array et mettre à jour la Webview
@@ -18,7 +20,10 @@ export class RecommendationsSidebarProvider implements vscode.WebviewViewProvide
     var newRecommandation = false;
     for (var val of recommandation) {
       if (!this.recommandations.map(command => command.name).includes(val) && (val !== '')) {
-        this.recommandations.push({ name: val, enabled: true });
+        // Récupérer le raccourci clavier associé à la commande
+        const keybinding = this.keybindingsMap.get(val);
+
+        this.recommandations.push({ name: val, enabled: true, keybinding });
         this.updateCommandList(); // Appel pour mettre à jour la liste des commandes dans la Webview
         newRecommandation = true;
       }
@@ -27,7 +32,7 @@ export class RecommendationsSidebarProvider implements vscode.WebviewViewProvide
   }
 
   // Méthode pour obtenir la liste des recommandations
-  getRecommendations(): Array<{ enabled: boolean, name: string }> {
+  getRecommendations(): Array<{ enabled: boolean, name: string, keybinding?: string }> {
     return this.recommandations;
   }
 
@@ -47,6 +52,21 @@ export class RecommendationsSidebarProvider implements vscode.WebviewViewProvide
     }
   }
 
+  /**
+   * Met à jour la map des raccourcis clavier et rafraîchit l'affichage
+   * @param newKeybindings Nouvelle map des raccourcis
+   */
+  updateKeybindings(newKeybindings: Map<string, string>): void {
+    this.keybindingsMap = newKeybindings;
+
+    // Mettre à jour les keybindings des recommandations existantes
+    for (const recommendation of this.recommandations) {
+      recommendation.keybinding = this.keybindingsMap.get(recommendation.name);
+    }
+
+    // Rafraîchir l'affichage
+    this.updateCommandList();
+  }
 
   /**
    * Méthode appelée automatiquement par VSCode lorsqu'il faut afficher la Webview View

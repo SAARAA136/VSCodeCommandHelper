@@ -1,71 +1,64 @@
-// Attente d'un message de l'extension
-window.addEventListener('message', event => {
-    const message = event.data;
-
-    switch (message.type) {
-        case 'updateCommands':
-            // Mise à jour des commandes reçues
-            console.log(message.data);
-            updateCommandList(message.data);
-            break;
-        default:
-            break;
-    }
-});
-
-// Fonction de mise à jour de la liste des commandes
-function updateCommandList(commands) {
-    const commandListContainer = document.getElementById('command-list');
+// Script exécuté dans la Webview (côté client)
+(function () {
     const vscode = acquireVsCodeApi();
 
-    // Keep track of the current checkboxes
-    const checkboxes = Array.from(commandListContainer.getElementsByClassName('command-item'));
+    // Gestion des messages de mise à jour des commandes
+    window.addEventListener('message', event => {
+        const message = event.data;
 
-    commands.forEach((command, index) => {
-        // If the checkbox already exists, update its state
-        const existingElement = checkboxes[index];
-
-        if (existingElement) {
-            const checkbox = existingElement.querySelector('input[type="checkbox"]');
-            if (checkbox) {
-                checkbox.checked = command.enabled;
-            }
-        } else {
-            // Otherwise, create a new checkbox if it doesn't exist
-            const commandElement = document.createElement('div');
-            commandElement.classList.add('command-item');
-
-            // Create the checkbox
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.checked = command.enabled;
-
-            checkbox.addEventListener('change', (event) => {
-                const enabled = event.target.checked;
-                vscode.postMessage({
-                    type: 'toggleCommand',
-                    commandName: command.name,
-                    enabled: enabled
-                });
-            });
-
-            // Create the command name text
-            const commandText = document.createElement('span');
-            commandText.textContent = command.name || 'Unnamed Command';
-
-            // Append checkbox and text to the commandElement
-            commandElement.appendChild(checkbox);
-            commandElement.appendChild(commandText);
-
-            // Append the new command to the container
-            commandListContainer.appendChild(commandElement);
+        if (message.type === 'updateCommands') {
+            updateCommandList(message.data);
         }
     });
 
-    // Remove any extra elements that no longer exist in the updated list
-    if (checkboxes.length > commands.length) {
-        for (let i = commands.length; i < checkboxes.length; i++) {
-            commandListContainer.removeChild(checkboxes[i]);
+    // Met à jour la liste des commandes dans la Webview
+    function updateCommandList(commands) {
+        const commandList = document.getElementById('command-list');
+        commandList.innerHTML = '';
+
+        if (commands.length === 0) {
+            commandList.innerHTML = '<div class="empty-list">Aucune commande recommandée pour le moment.</div>';
+            return;
         }
+
+        commands.forEach(command => {
+            const commandItem = document.createElement('div');
+            commandItem.className = 'command-item';
+
+            // Checkbox pour activer/désactiver la commande
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = command.enabled;
+            checkbox.addEventListener('change', () => {
+                vscode.postMessage({
+                    type: 'toggleCommand',
+                    commandName: command.name,
+                    enabled: checkbox.checked
+                });
+            });
+
+            // Conteneur pour le nom de la commande et son raccourci
+            const commandInfo = document.createElement('div');
+            commandInfo.className = 'command-info';
+
+            // Nom de la commande
+            const commandName = document.createElement('div');
+            commandName.className = 'command-name';
+            commandName.textContent = command.name;
+            commandInfo.appendChild(commandName);
+
+            // Raccourci clavier (si disponible)
+            if (command.keybinding) {
+                const keybinding = document.createElement('div');
+                keybinding.className = 'command-keybinding';
+                keybinding.textContent = command.keybinding;
+                commandInfo.appendChild(keybinding);
+            }
+
+            // Assemblage
+            commandItem.appendChild(checkbox);
+            commandItem.appendChild(commandInfo);
+            commandList.appendChild(commandItem);
+        });
     }
-}
+})();
