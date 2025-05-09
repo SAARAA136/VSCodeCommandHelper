@@ -2,6 +2,7 @@
 
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
+import { truncateSync } from 'fs';
 import * as vscode from 'vscode';
 import { WebSocketServer } from 'ws';
 
@@ -58,9 +59,8 @@ export function activate(context: vscode.ExtensionContext) {
 
                 // Convertir le message en objet JSON
                 const data = JSON.parse(message.toString());
-
                 // Calcul des recommendations par simulation
-                const recommendations = await simulate(data.texte, data.curseur, textEditor, false);
+                const recommendations = await simulate(data.texte, data.curseur, data.banned_commands, textEditor, false);
 
                 if (recommendations !== '') {
                     // Envoi du résultat
@@ -91,6 +91,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 async function simulate(liste_etats_texte: string[],
     liste_etats_curseur: vscode.Selection[],
+    banned_commands: string[],
     textEditor: vscode.TextEditor | undefined,
     allCommands: boolean): Promise<string> {
 
@@ -160,8 +161,12 @@ async function simulate(liste_etats_texte: string[],
                     const currentPositionActive = new vscode.Position(current_cursor.active.line, current_cursor.active.character);
                     textEditor.selection = new vscode.Selection(currentPositionAnchor, currentPositionActive);
 
-                    // Exécution de la commande
-                    await vscode.commands.executeCommand(command);
+                    const isInList = banned_commands.includes(command);
+                    if (isInList !== true) {
+                        // Exécution de la commande
+                        await vscode.commands.executeCommand(command);
+                        console.log(command);
+                    }
 
                     // Récupération de l'état obtenu
                     const new_texte = textEditor.document.getText();
