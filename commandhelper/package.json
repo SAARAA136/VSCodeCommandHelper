@@ -1,10 +1,10 @@
 {
-  "name": "commandhelper",
-  "displayName": "command Helper",
-  "description": "A tool to discover new commands in VSCode.",
+  "name": "command-helper",
+  "displayName": "Command Helper",
+  "description": "",
   "version": "0.0.1",
   "engines": {
-    "vscode": "^1.97.0"
+    "vscode": "^1.98.0"
   },
   "categories": [
     "Other"
@@ -12,10 +12,28 @@
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "recommendations-sidebar",
+          "title": "Commandes",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "recommendations-sidebar": [
+        {
+          "id": "recommendedCommands",
+          "name": "Commandes recommandées",
+          "type": "webview"
+        }
+      ]
+    },
     "commands": [
       {
-        "command": "commandhelper.readActiveFile",
-        "title": "Read Active File"
+        "command": "command-helper.helloWorld",
+        "title": "Command Helper"
       }
     ]
   },
@@ -28,14 +46,19 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.97.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
+    "@types/vscode": "^1.98.0",
+    "@types/ws": "^8.18.1",
     "@typescript-eslint/eslint-plugin": "^8.22.0",
     "@typescript-eslint/parser": "^8.22.0",
-    "eslint": "^9.19.0",
-    "typescript": "^5.7.3",
     "@vscode/test-cli": "^0.0.10",
-    "@vscode/test-electron": "^2.4.1"
+    "@vscode/test-electron": "^2.4.1",
+    "eslint": "^9.19.0",
+    "typescript": "^5.7.3"
+  },
+  "dependencies": {
+    "websocket": "^1.0.35",
+    "ws": "^8.18.1"
   }
 }

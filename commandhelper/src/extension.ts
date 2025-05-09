@@ -1,64 +1,159 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import fs from 'fs';
+import * as path from 'path';
+import { spawn } from 'child_process';
+import { json } from 'stream/consumers';
+import { WebSocket } from 'ws';
+
+// Import du fournisseur de Webview View (c'est le panneau latéral)
+import { RecommendationsSidebarProvider } from './sidebarView';
+
+/******************************
+ * COMMUNICATION VIA WEBSOCKETS
+ ******************************/
+
+
+
+const PORT = 9999;
+const socket = new WebSocket(`ws://localhost:${PORT}`);
+
+socket.onopen = () => {
+	console.log('Connecté au serveur WebSocket');
+	socket.send('Hello serveur !');
+};
+
+socket.onclose = () => {
+	console.log('Connexion WebSocket fermée.');
+};
+
+socket.onerror = (error) => {
+	console.error('Erreur WebSocket:', error);
+};
+
+
+
+/*********************
+ * MAIN DE L'EXTENSION
+ *********************/
+
+
+
+// Liste des états
+import { liste_etats_curseur, liste_etats_texte } from './recommendation';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
 
+	const editor = vscode.window.activeTextEditor;
+
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "commandhelper" is now active!');
-
-	vscode.window.onDidChangeTextEditorSelection((event: vscode.TextEditorSelectionChangeEvent) => {
-		// Event kind : The change kind which has triggered this event. Can be undefined.
-		// 1: Keyboard
-		// 2: Mouse
-		// 3: Command
-		console.log(`Event kind : ${event.kind}`)
-
-		// Event selection : The new value for the text editor's selections.
-		// active : position of the cursor
-		// anchor : position at which the selection starts
-		// start : start position. It is before or equal to end.
-		// end : end position. It is after or equal to start.
-		console.log(`Event selection active (character:number, line:number): ${event.selections[0].active.character}, ${event.selections[0].active.line}`)
-		console.log(`Event selection anchor (character:number, line:number): ${event.selections[0].anchor.character}, ${event.selections[0].active.line}`)
-
-		// Event textEditor : The text editor for which the selections have changed.
-		// Affiche le texte sélectionné
-		var rangeOfSelection = new vscode.Range(event.selections[0].start, event.selections[0].end)
-		console.log(`Event textEditor : ${event.textEditor.document.getText(rangeOfSelection)}`)
-
-
-	}, null, context.subscriptions);
+	console.log('Congratulations, your extension "command-helper" is now active!');
 
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with registerCommand
 	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('commandhelper.readActiveFile', () => {
-		const editor = vscode.window.activeTextEditor;
-
-		if (editor) {
-			// Get the content of the currently acive file
-			const document = editor.document;
-
-			// Get the text from the entire document 
-			const fileContent = document.getText();
-
-			// Show file content in a message box (just for demo)
-			vscode.window.showInformationMessage('File Content:', fileContent.substring(0, 100)); // Just shows first 100 characters
-        } else {
-            vscode.window.showInformationMessage('No active editor found!');
-		}
-
+	const disposable = vscode.commands.registerCommand('command-helper.helloWorld', () => {
 		// The code you place here will be executed every time your command is executed
 		// Display a message box to the user
-		// vscode.window.showInformationMessage('Hello World from commandHelper!');
+		vscode.window.showInformationMessage('Hello World from Command Helper!');
 	});
 
-	context.subscriptions.push(disposable);
+
+
+	/***************************
+	* AJOUT CODE PANNEAU LATÉRAL
+	****************************/
+
+
+
+	// TODO
+
+
+	// Création d'une instance du fournisseur de la vue latérale
+	const sidebarProvider = new RecommendationsSidebarProvider(context.extensionUri);
+
+	// Enregistrement du Webview View Provider auprès de VSCode
+	// Cela permet de connecter notre vue "recommendedCommands" définie dans package.json
+	context.subscriptions.push(
+		vscode.window.registerWebviewViewProvider(
+			'recommendedCommands',  // ID de la vue, doit correspondre à celui défini dans package.json
+			sidebarProvider         // Le fournisseur qui gère cette vue
+		)
+	);
+
+	// Enregistrement de la commande "Afficher les recommandations"
+	context.subscriptions.push(
+		vscode.commands.registerCommand('extension.showRecommendationsPopup', (commande: string) => {
+			const recommandations = commande.split("\n");
+
+			sidebarProvider.addRecommandation(recommandations);
+			// Affiche une boîte de message avec un bouton "Voir"
+			vscode.window.showInformationMessage(
+				`Des commandes vous sont recommandées : ${recommandations[0]}`,
+				'Voir'
+			).then(selection => {
+				if (selection === 'Voir') {
+					// Si l'utilisateur clique sur "Voir", on affiche le panneau latéral
+					vscode.commands.executeCommand('workbench.view.extension.recommendations-sidebar');
+				}
+			});
+		})
+	);
+
+	/**********************
+	* MISE À JOUR DES ÉTATS
+	***********************/
+
+
+
+	// Évènement qui se déclenche lorsque l'utilisateur déplace la souris ou change la sélection
+	const selectionListener = vscode.window.onDidChangeTextEditorSelection(event => {
+		if (event.textEditor === vscode.window.activeTextEditor && editor) {
+
+			const document = editor.document;
+			const text = document.getText();
+
+			// On ajoute le nouvel état texte
+			liste_etats_texte.push(text);
+
+			// Position actuelle du curseur
+			const selections = event.selections;
+
+			if (selections.length > 1) {
+				console.log("Plusieurs sélections actives !");
+			}
+
+			liste_etats_curseur.push(selections[0]);
+
+			const banned_commands = sidebarProvider.getBannedList();
+			const recommended = sidebarProvider.getRecommendations();
+
+			// Envoi du nouvel état au serveur
+			socket.send(JSON.stringify({
+				'texte': liste_etats_texte,
+				'curseur': liste_etats_curseur,
+				'banned_commands': banned_commands
+			}));
+
+			// On reçoit une recommendation
+			socket.onmessage = (event) => {
+				// Convertir la réponse JSON en objet
+				const response = event.data;
+
+				vscode.commands.executeCommand('extension.showRecommendationsPopup', `${response}`);
+
+				const filePath = path.join(__dirname, 'log');
+				const line = `${response}`;
+			};
+		}
+	});
+
+	context.subscriptions.push(disposable, selectionListener);
 }
 
 // This method is called when your extension is deactivated
-export function deactivate() {}
+export function deactivate() { }
