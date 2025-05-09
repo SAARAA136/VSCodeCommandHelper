@@ -38,6 +38,7 @@ Depuis le dossier `VSCodeCommandHelper`, lancez :
 
 Une fenêtre VS Code s’ouvre. Ouvrez ensuite le fichier `extension.ts` dans le dossier `src`, puis appuyez sur **F5** pour activer l’extension. Si une sélection vous est proposée, choisissez "VS Code Extension Development". Une nouvelle fenêtre s’ouvre, dans laquelle l’utilisateur peut écrire du texte ou du code : le système proposera alors certaines commandes potentiellement utiles.
 
+> Testez sur 4 espaces en début de ligne et sélectionnez tout le texte de l'éditeur.
 > Pour redémarrer une simulation, relancez **F5** depuis le fichier extension.ts.
 
 ### 2. Extension générique par simulation
