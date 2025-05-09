@@ -12,20 +12,34 @@ export const diagnosticCollection = vscode.languages.createDiagnosticCollection(
 // Panneau pour les GIFs
 let panel: vscode.WebviewPanel | undefined = undefined;
 
-// Contenu HTML du panneau de recommandation
-function getWebviewContent(recommendation: string, description: string, gifPath: vscode.Uri): string {
+let recommendationBlocks: string = '';
+
+function createRecommendationBlock(recommendation: string, description: string, gifPath: vscode.Uri): string {
+    return `
+        <details open>
+            <summary><strong>${recommendation}</strong></summary>
+            <p>${description}</p>
+            <div class="gif-container">
+                <img src="${gifPath}" alt="Tutoriel ${recommendation}">
+            </div>
+        </details>
+    `;
+}
+
+function getFullWebviewContent(content: string): string {
     return `
         <!DOCTYPE html>
         <html lang="fr">
         <head>
             <meta charset="UTF-8">
             <style>
-                body { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4; text-align: center; }
-                h1 { color: #007acc; font-size: 24px; }
-                h2 { color: #333; font-size: 20px; margin-bottom: 10px; }
-                p { background: #007acc; color: white; padding: 10px; border-radius: 5px; font-weight: bold; display: inline-block; }
-                .gif-container { display: flex; justify-content: center; margin: 20px 0; }
-                .gif-container img { max-width: 80%; height: auto; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0,0,0,0.2); }
+                body { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4; }
+                h1 { color: #007acc; font-size: 24px; text-align: center; }
+                p { color: #0d0d32; font-size: 15px; text-align: left; }
+                details { margin-bottom: 15px; background: #fff; padding: 10px; border-radius: 5px; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
+                summary { cursor: pointer; font-size: 18px; color: #007acc; }
+                .gif-container { display: flex; justify-content: center; margin: 10px 0; }
+                .gif-container img { max-width: 60%; border-radius: 10px; }
                 button {
                     background: #d9534f;
                     color: white;
@@ -34,7 +48,8 @@ function getWebviewContent(recommendation: string, description: string, gifPath:
                     border-radius: 5px;
                     cursor: pointer;
                     font-weight: bold;
-                    margin-top: 20px;
+                    display: block;
+                    margin: 30px auto 0;
                 }
                 button:hover {
                     background: #c9302c;
@@ -43,11 +58,7 @@ function getWebviewContent(recommendation: string, description: string, gifPath:
         </head>
         <body>
             <h1>Recommandations</h1>
-            <h2>${recommendation}</h2>
-            <p>${description}</p>
-            <div class="gif-container">
-                <img src="${gifPath}" alt="Tutoriel ${recommendation}">
-            </div>
+            ${content}
             <button onclick="vscode.postMessage({ command: 'close' })">Fermer</button>
             <script>
                 const vscode = acquireVsCodeApi();
@@ -57,11 +68,12 @@ function getWebviewContent(recommendation: string, description: string, gifPath:
     `;
 }
 
+
 // Mise à jour du panneau de recommandation
 export function updateRecommendationPanel(recommendation: string, context: vscode.ExtensionContext) {
     const allCommands = { ...commandInfo, ...commandInfoInvisible };
     const cmdInfo = allCommands[recommendation];
-    
+
     if (!cmdInfo) {
         vscode.window.showErrorMessage(`Aucune information trouvée pour la commande ${recommendation}`);
         return;
@@ -72,7 +84,7 @@ export function updateRecommendationPanel(recommendation: string, context: vscod
             'recommendationsPanel',
             'Recommandations',
             vscode.ViewColumn.Beside,
-            { 
+            {
                 enableScripts: true,
                 localResourceRoots: [
                     vscode.Uri.file(path.join(context.extensionPath, 'src', 'media'))
@@ -89,12 +101,13 @@ export function updateRecommendationPanel(recommendation: string, context: vscod
 
         panel.onDidDispose(() => {
             panel = undefined;
+            recommendationBlocks = ''; // Clear content
         });
     }
 
     const { description, gifFile } = cmdInfo;
     const gifPath = vscode.Uri.file(path.join(context.extensionPath, 'src', 'media', gifFile));
-    
+
     try {
         fs.accessSync(gifPath.fsPath, fs.constants.R_OK);
     } catch (err) {
@@ -104,32 +117,34 @@ export function updateRecommendationPanel(recommendation: string, context: vscod
     }
 
     const gifWebviewUri = panel.webview.asWebviewUri(gifPath);
-    panel.webview.html = getWebviewContent(recommendation, description, gifWebviewUri);
+    recommendationBlocks += createRecommendationBlock(recommendation, description, gifWebviewUri);
+    panel.webview.html = getFullWebviewContent(recommendationBlocks);
+
 }
 
 // Mise en surbrillance avec diagnostic
 export function highlightWithDiagnostic(editor: vscode.TextEditor, recommendation: string, ranges: vscode.Range[]) {
     const allCommands = { ...commandInfo, ...commandInfoInvisible };
     const cmdInfo = allCommands[recommendation];
-    if (!cmdInfo) return;
+    if (!cmdInfo) { return; }
 
     const document = editor.document;
-    
+
     const existingDiagnostics = diagnosticCollection.get(document.uri) || [];
-    
+
     const filteredDiagnostics = existingDiagnostics.filter(diag => {
         const diagMessage = diag.message;
         return !diagMessage.startsWith(recommendation);
     });
-    
+
     let newDiagnostics: vscode.Diagnostic[] = [];
     let decorations: vscode.DecorationOptions[] = [];
-    
+
     for (const range of ranges) {
-        const existingAtSamePos = filteredDiagnostics.find(d => 
+        const existingAtSamePos = filteredDiagnostics.find(d =>
             d.range.isEqual(range)
         );
-        
+
         if (!existingAtSamePos) {
             let diagnostic = new vscode.Diagnostic(
                 range,
@@ -146,12 +161,12 @@ export function highlightWithDiagnostic(editor: vscode.TextEditor, recommendatio
 
             newDiagnostics.push(diagnostic);
         }
-        
+
         decorations.push({ range });
     }
 
     const updatedDiagnostics = [...filteredDiagnostics, ...newDiagnostics];
-    
+
     diagnosticCollection.set(document.uri, updatedDiagnostics);
 
     updateDecorations(editor, recommendation, decorations);
