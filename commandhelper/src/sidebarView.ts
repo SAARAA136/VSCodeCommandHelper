@@ -5,7 +5,7 @@ import * as vscode from 'vscode';
  * Elle doit implémenter l'interface WebviewViewProvider
  */
 export class RecommendationsSidebarProvider implements vscode.WebviewViewProvider {
-  private recommandations: string[];
+  private recommandations: Array<{ enabled: boolean, name: string }>;
   private _webviewView: any;
 
   constructor(private readonly _extensionUri: vscode.Uri) {
@@ -14,15 +14,20 @@ export class RecommendationsSidebarProvider implements vscode.WebviewViewProvide
   }
 
   // Méthode pour ajouter un élément à l'array et mettre à jour la Webview
-  addRecommandation(recommandation: string): void {
-    if (!this.recommandations.includes(recommandation)) {
-      this.recommandations.push(recommandation);
-      this.updateCommandList(); // Appel pour mettre à jour la liste des commandes dans la Webview
+  addRecommandation(recommandation: string[]): boolean {
+    var newRecommandation = false;
+    for (var val of recommandation) {
+      if (!this.recommandations.map(command => command.name).includes(val) && (val !== '')) {
+        this.recommandations.push({ name: val, enabled: true });
+        this.updateCommandList(); // Appel pour mettre à jour la liste des commandes dans la Webview
+        newRecommandation = true;
+      }
     }
+    return newRecommandation;
   }
 
   // Méthode pour obtenir la liste des recommandations
-  getRecommendations(): string[] {
+  getRecommendations(): Array<{ enabled: boolean, name: string }> {
     return this.recommandations;
   }
 
@@ -69,10 +74,13 @@ export class RecommendationsSidebarProvider implements vscode.WebviewViewProvide
     // Gestion de la réception de messages depuis le JavaScript de la Webview
     webviewView.webview.onDidReceiveMessage(message => {
       if (message.type === 'toggleCommand') {
-        const { command, enabled } = message;
-
+        const { commandName, status } = message;
         // Traitement du changement d'état d'une commande
-        console.log(`Commande ${command} => ${enabled}`);
+        console.log(`Commande ${commandName} => ${status}`);
+        const command = this.recommandations.find(command => command.name === commandName);
+        if (command) {
+          command.enabled = status;
+        }
       }
     });
 

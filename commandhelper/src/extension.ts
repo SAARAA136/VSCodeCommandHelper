@@ -88,10 +88,14 @@ export function activate(context: vscode.ExtensionContext) {
 	// Enregistrement de la commande "Afficher les recommandations"
 	context.subscriptions.push(
 		vscode.commands.registerCommand('extension.showRecommendationsPopup', (commande: string) => {
-			sidebarProvider.addRecommandation(commande);
+			const recommandations = commande.split("\n");
+			console.log('nouvelle recommandation');
+
+			console.log(recommandations);
+			sidebarProvider.addRecommandation(recommandations);
 			// Affiche une boîte de message avec un bouton "Voir"
 			vscode.window.showInformationMessage(
-				`Des commandes vous sont recommandées : ${commande}`,
+				`Des commandes vous sont recommandées : ${recommandations[0]}`,
 				'Voir'
 			).then(selection => {
 				if (selection === 'Voir') {

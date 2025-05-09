@@ -5,7 +5,7 @@ window.addEventListener('message', event => {
     switch (message.type) {
         case 'updateCommands':
             // Mise à jour des commandes reçues
-            console.log(message.data);  // Log the data to check if it's correct
+            console.log(message.data);
             updateCommandList(message.data);
             break;
         default:
@@ -20,11 +20,11 @@ function updateCommandList(commands) {
 
     // Ajouter chaque commande à la liste
     commands.forEach(command => {
-        // Create a new div to hold each checkbox and its label (text)
+        // Créé un nouveau div qui contient une checkbox et son label
         const commandElement = document.createElement('div');
         commandElement.classList.add('command-item');
 
-        // Create the checkbox for each command
+        // Créé la checkbox pour chaque commande
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.checked = command.enabled;
@@ -39,15 +39,15 @@ function updateCommandList(commands) {
             });
         });
 
-        // Create the span element to hold the command's name
+        // Créé l'élément span qui contient le nom de la commande
         const commandText = document.createElement('span');
-        commandText.textContent = command || 'Unnamed Command';  // Ensure there's text here
+        commandText.textContent = command.name || 'Unnamed Command';
 
-        // Append the checkbox and text to the commandElement div
+        // Ajoute une checkbox et du texte à commandElement div
         commandElement.appendChild(checkbox);
         commandElement.appendChild(commandText);
 
-        // Append the commandElement to the container
+        // Ajoute le commandElement au container
         commandListContainer.appendChild(commandElement);
     });
 }
