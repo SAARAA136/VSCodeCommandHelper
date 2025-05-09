@@ -1,7 +1,7 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import fs from 'fs';
+import fs, { readFile } from 'fs';
 import * as path from 'path';
 import { spawn } from 'child_process';
 import { json } from 'stream/consumers';
@@ -13,8 +13,6 @@ import { RecommendationsSidebarProvider } from './sidebarView';
 /******************************
  * COMMUNICATION VIA WEBSOCKETS
  ******************************/
-
-
 
 const PORT = 9999;
 const socket = new WebSocket(`ws://localhost:${PORT}`);
@@ -70,11 +68,86 @@ export function activate(context: vscode.ExtensionContext) {
 
 
 
-	// TODO
+	// Récupération des raccourcis clavier de VS Code
+	async function getCommandKeybindings(): Promise<Map<string, string>> {
+		// Charger les raccourcis depuis le fichier keybindings.json
+		const fileKeybindings = loadKeybindingsFromFile();
 
+		// Si vous souhaitez compléter avec les raccourcis VSCode actuels:
+		try {
+			// Récupère tous les keybindings définis dans VSCode (si disponible)
+			const vscodeKeybindingsCommand = await vscode.commands.getCommands(true)
+				.then(commands => commands.find(cmd => cmd === 'getKeyBinding' || cmd === 'getKeyBindings'));
 
-	// Création d'une instance du fournisseur de la vue latérale
-	const sidebarProvider = new RecommendationsSidebarProvider(context.extensionUri);
+			if (vscodeKeybindingsCommand) {
+				const allKeybindings = await vscode.commands.executeCommand(vscodeKeybindingsCommand);
+				if (Array.isArray(allKeybindings)) {
+					for (const binding of allKeybindings) {
+						if (binding.command && (binding.key || binding.resolvedKeybinding)) {
+							const keyString = binding.key || binding.resolvedKeybinding;
+							if (!fileKeybindings.has(binding.command) && keyString) {
+								fileKeybindings.set(binding.command, keyString);
+							}
+						}
+					}
+				}
+			}
+		} catch (error) {
+			// Ignore les erreurs, on utilise uniquement les raccourcis du fichier
+		}
+
+		return fileKeybindings;
+	}
+
+	/**
+	 * Charge les raccourcis clavier depuis le fichier keybindings.json
+	 * @returns Une Map associant les commandes à leurs raccourcis
+	 */
+	function loadKeybindingsFromFile(): Map<string, string> {
+		const keybindingsMap = new Map<string, string>();
+
+		try {
+			// Chemin vers le fichier keybindings.json
+			const keybindingsPath = path.join(path.dirname(__dirname), 'media', 'keybindings.json');
+
+			// Lecture du contenu du fichier
+			const content = fs.readFileSync(keybindingsPath, 'utf8');
+
+			// Supprimer les commentaires pour permettre le parsing JSON
+			const jsonContent = content.replace(/\/\/.*$/gm, '');
+
+			// Parser le JSON
+			const keybindings = JSON.parse(jsonContent);
+
+			// Parcourir tous les raccourcis et les ajouter à la Map
+			for (const binding of keybindings) {
+				if (binding.command && binding.key) {
+					keybindingsMap.set(binding.command, binding.key);
+				}
+			}
+
+			console.log(`Chargement des raccourcis terminé, ${keybindingsMap.size} raccourcis trouvés`);
+		} catch (error) {
+			console.error('Erreur lors du chargement des raccourcis:', error);
+		}
+
+		return keybindingsMap;
+	}
+
+	// Chargement des raccourcis clavier depuis le fichier et l'API VSCode
+	const keybindingsMap = loadKeybindingsFromFile();
+
+	// Compléter avec les raccourcis VSCode si disponibles
+	getCommandKeybindings().then(map => {
+		// Mise à jour de la map avec les nouvelles valeurs
+		map.forEach((value, key) => keybindingsMap.set(key, value));
+
+		// Mettre à jour le sidebarProvider avec les nouvelles valeurs
+		sidebarProvider.updateKeybindings(keybindingsMap);
+	});
+
+	// Création du sidebar provider avec la map des keybindings initiale
+	const sidebarProvider = new RecommendationsSidebarProvider(context.extensionUri, keybindingsMap);
 
 	// Enregistrement du Webview View Provider auprès de VSCode
 	// Cela permet de connecter notre vue "recommendedCommands" définie dans package.json
