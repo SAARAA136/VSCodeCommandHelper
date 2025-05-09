@@ -1,0 +1,13 @@
+#!/bin/bash
+
+cd commandhelper-rules
+npm install
+npm run compile
+cd ../commandhelper
+npm install
+npm install ws @types/ws
+npm run compile
+cd ../simulation
+npm install
+npm install ws @types/ws
+npm run compile
