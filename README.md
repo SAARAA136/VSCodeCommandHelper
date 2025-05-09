@@ -1,44 +1,97 @@
 # VSCodeCommandHelper - Projet AI2D
 
 VSCodeCommandHelper est une extension pour VS Code qui assiste les développeurs en suggérant les commandes les plus optimales selon le contexte et les actions effectuées. Ce projet combine IA, développement logiciel et IHM pour améliorer l’expérience utilisateur et optimiser l’usage des fonctionnalités de l’éditeur.
-Ce projet est encadré par Gilles Bailly et Julien Gori.
 
-## Utilisation
+> Ce projet est encadré par **Gilles Bailly** et **Julien** Gori.
 
-L'exécution du projet de recommandation nécessite d'avoir un terminal bash avec les droits d'exécution ainsi que Node.js et VSCode sous une version récente. Pour les utilisateurs de MAC, il faut installer la commande 'code' pour pouvoir lancer la commande.
+## Prérequis et installation
 
-Le projet est découpé en 3 extensions :
+L'exécution du projet nécessite :
 
-1. Une extension pour un affichage "avancé" mais pour quelques commandes basiques;
-2. Une extension plus générique avec un affichage "simple" qui peut recommander un nombre arbitraire de commandes;
-3. Une extension pour la simulation des commandes nécessaire au fonctionnement de l'extension générique.
+- Un terminal bash avec les droits d’exécution,
+- Node.js installé,
+- Une version récente de Visual Studio Code.
 
-Avant de pouvoir utiliser l'extension, il faut les installer. Placez-vous dans le dossier __VSCodeCommandHelper__ et entrez :
+> Utilisateurs Mac : Veillez à avoir la commande code disponible dans votre terminal (via la palette de commande : Shell Command: Install 'code' command in PATH).
+
+Le projet se compose de trois extensions :
+
+1. Une extension avec un affichage **avancé** pour quelques commandes basiques ;
+
+2. Une extension plus **générique** avec un affichage simple, capable de recommander un nombre arbitraire de commandes ;
+
+3. Une extension dédiée à la **simulation** des commandes, nécessaire au fonctionnement de l’extension générique.
+
+### Installation
+
+Depuis le répertoire racine `VSCodeCommandHelper`, exécutez la commande suivante :
 
     ./install
 
-### Extension affichage avancé
+## Utilisation des extensions
 
-Placez-vous dans le répertoire *VSCodeCommandHelper* et lancez la commande :
+### 1. Extension à  affichage avancé
+
+Depuis le dossier `VSCodeCommandHelper`, lancez :
 
     code commandhelper-rules
 
-Cela ouvre une fenêtre VSCode. Déplacez-vous dans le fichier *extension.ts* puis appuyez sur la touche F5. Cela active l'extension en ouvrant une nouvelle fenêtre dans laquelle l'utilisateur peut écrire du texte ou code et le système recommandera certaines commandes potentiellement intéressantes pour ce dernier.
+Une fenêtre VS Code s’ouvre. Ouvrez ensuite le fichier `extension.ts`, puis appuyez sur **F5** pour activer l’extension. Une nouvelle fenêtre s’ouvre, dans laquelle l’utilisateur peut écrire du texte ou du code : le système proposera alors certaines commandes potentiellement utiles.
 
-Pour recommencer une simulation, il faut redémarrer l'extension en refaisant F5 depuis le fichier *extension.ts*
+> Pour redémarrer une simulation, relancez **F5** depuis le fichier extension.ts.
 
-### Extension générique par simulation
+### 2. Extension générique par simulation
 
-Lorsque l'utilisateur modifie le fichier sur lequel il travaille (changement de position du curseur et modification du texte), un nouvel état est crée. L'approche par simulation consiste à recréer chacun de ces états dans une fenêtre VSCode dédiée (*simulation*) puis d'exécuter chaque commande à tester, comparer le résultat avec l'état courant dans la fenêtre sur laquelle travaille l'utilisateur (*commandhelper*) puis recommander la commande s'il les états sont les même.
+L’approche par simulation consiste à :
 
-Placez-vous dans le répertoire *VSCodeCommandHelper* et lancez la commande :
+- Créer un nouvel état à chaque modification (déplacement du curseur ou modification du texte),
+
+- Reproduire cet état dans une fenêtre dédiée (simulation),
+
+- Exécuter les commandes à tester et comparer leur effet avec l’état de la fenêtre de travail (commandhelper),
+
+- Recommander la commande si les états correspondent.
+
+**Lancement :**
+
+Depuis le dossier `VSCodeCommandHelper`, exécutez :
 
     ./start
     
-Cela ouvre deux fenêtres, une pour la simulation des commandes et une pour l'éditeur principal de l'utilisateur (celui dans lequel l'utilisateur va travailler). Placez vous dans la fenêtre *simulation*, puis placez-vous dans le fichier *extension.ts* et entrez la touche F5 qui ouvre la fenêtre de "debug" pour la simulation. Il se peut qu'on vous demande quel extension de debug vous voulez utiliser, il faut sélectionner "VS Code Extension Development".
+Cela ouvre deux fenêtres :
 
-Placez vous ensuite dans la fenêtre *commandhelper*, puis placez-vous dans le fichier *extension.ts* et entrez la touche F5. La nouvelle fenêtre de debug qui s'ouvre servira d'environnement de travail pour l'utilisateur dans laquelle il pourra écrire le texte ou code qu'il veut et le système recommendera éventuellement des commandes qui pourrait améliorer son expérience et sa productivité.
+- Une fenêtre simulation pour rejouer les commandes à tester,
 
-Lorsque qu'une commande a été trouvée pour être recommandée, une fenêtre pop-up s'affiche avec le nom de la commande et un bouton cliquable "Voir". Si l'utilisateur clique sur ce bouton, un panneau latéral s'ouvre avec les différentes commandes qui ont déjà été recommandées sous forme de liste de cases à cocher. Lorsque l'on décoche la case d'une commande, le système arrête de la recommander et lorsque la coche de nouveau il la recommande de nouveau.
+- Une fenêtre commandhelper dans laquelle l’utilisateur travaille.
 
-Plus l'utilisateur va écrire du texte, plus le temps de simulation va être long (voir Rapport). Pour recommencer une simulation, il faut redémarrer l'extension en refaisant F5 depuis le fichier *extension.ts* de *simulation* **puis** F5 depuis le fichier *extension.ts* de *commandhelper*.
+**Étapes :**
+
+1. Dans la fenêtre simulation, ouvrez le fichier extension.ts et appuyez sur F5 pour lancer la fenêtre de débogage.
+
+- Si une sélection vous est proposée, choisissez "VS Code Extension Development".
+
+2. Dans la fenêtre commandhelper, ouvrez également extension.ts, puis appuyez sur F5.
+
+- La nouvelle fenêtre qui s’ouvre sera l’environnement de travail de l’utilisateur, dans lequel il pourra écrire librement.
+
+Lorsque le système identifie une commande pertinente, une fenêtre pop-up s’affiche avec :
+
+- Le nom de la commande,
+
+- Un bouton "Voir".
+
+En cliquant sur "Voir", un panneau latéral s’ouvre avec la **liste des commandes recommandées** (cases à cocher).
+
+- Décochez une commande pour **cesser sa recommandation**,
+
+- Recochez-la pour **la réactiver**.
+
+> Attention : plus l’utilisateur écrit, plus la simulation peut devenir longue (voir le rapport pour plus de détails).
+
+**Redémarrage de la simulation :**
+
+Pour redémarrer la simulation, répétez la séquence suivante :
+
+1. F5 dans le fichier `extension.ts` de **simulation**,
+
+2. Puis F5 dans le fichier `extension.ts` de **commandhelper**.
